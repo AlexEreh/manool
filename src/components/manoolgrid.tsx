@@ -3,6 +3,7 @@ import Table, {ColumnsType, EXPAND_COLUMN, genTable} from 'rc-table'
 import Image from "next/image"
 import React, {Key} from "react";
 import {FaArrowUp, FaArrowDown} from "react-icons/fa";
+import {TriggerEventHandler} from "rc-table/es/interface";
 
 export class ItemRow {
     public first: string
@@ -105,15 +106,16 @@ const expandedElementBuilder = (record: ItemRow, index: number, indent: number, 
 
 export interface ExpandIconProps {
     expanded: boolean,
+    onExpand: () => void
 }
 
 export function ExpandIcon(props: ExpandIconProps): React.JSX.Element {
     return (props.expanded) ?
         <div className="px-5">
-            <FaArrowUp className="bg-sky-400 px-2 w-10 h-10 text-white rounded-full"/>
+            <FaArrowUp onClick={props.onExpand} className="bg-sky-400 px-2 w-10 h-10 text-white rounded-full"/>
         </div> :
         <div className="px-5">
-            <FaArrowDown className="bg-sky-400 px-2 w-10 h-10 text-white rounded-full"/>
+            <FaArrowDown onClick={props.onExpand} className="bg-sky-400 px-2 w-10 h-10 text-white rounded-full"/>
         </div>
 }
 
@@ -136,17 +138,8 @@ export default function ManoolGrid() {
             hidden: !expandedColumn,
             dataIndex: 'second',
             render: (_value: string, row: ItemRow, index: number) => ManoolItem({
-                value: _value, onClick: () => {
-                    let newKeys = expandedRowKeys.map(a => Object.assign({}, a))
-                    let index = newKeys.findIndex((value, index, obj) => {
-                        return obj[index] == value
-                    })
-                    if (index == -1) {
-                        newKeys.push(row.key)
-                    } else {
-                        newKeys.splice(index, 1)
-                    }
-                    setExpandedRowKeys(newKeys)
+                value: _value,
+                onClick: () => {
                 }
             }),
         },
@@ -166,6 +159,19 @@ export default function ManoolGrid() {
         }
     ]
 
+    let onExpand: (expanded: boolean, record: ItemRow) => void = (expanded, record) => {
+        let newKeys = expandedRowKeys.map(a => Object.assign({}, a))
+        let index = newKeys.findIndex((value, index, obj) => {
+            return obj[index] == value
+        })
+        if (index == -1) {
+            newKeys.push(record.key)
+        } else {
+            newKeys.splice(index, 1)
+        }
+        setExpandedRowKeys(newKeys)
+    };
+
     return <>
         <Table
             tableLayout={"fixed"}
@@ -176,7 +182,11 @@ export default function ManoolGrid() {
                 expandedRowKeys: expandedRowKeys,
                 expandIcon: (props) => ExpandIcon({
                     expanded: props.expanded,
+                    onExpand: () => {
+                        onExpand(props.expanded, props.record)
+                    }
                 }),
+                onExpand: onExpand,
                 rowExpandable: () => true,
                 onExpandedRowsChange: setExpandedRowKeys,
                 expandedRowRender: expandedElementBuilder
