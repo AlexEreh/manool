@@ -1,7 +1,8 @@
 'use client'
-import Table from 'rc-table'
+import Table, {ColumnsType, EXPAND_COLUMN, genTable} from 'rc-table'
 import Image from "next/image"
 import React, {Key} from "react";
+import {FaArrowUp, FaArrowDown} from "react-icons/fa";
 
 export class ItemRow {
     public first: string
@@ -9,6 +10,7 @@ export class ItemRow {
     public third: string
     public fourth: string
     public key: React.Key
+    public children: ItemRow[]
 
     constructor(key: React.Key, ...items: string[]) {
         this.first = items[0]
@@ -16,34 +18,35 @@ export class ItemRow {
         this.third = items[2]
         this.fourth = items[3]
         this.key = key
+        this.children = []
     }
 }
 
-export interface ManoolItemProps { text: string }
+export interface ManoolItemProps {
+    value: string,
+    onClick: () => void
+}
 
 export function ManoolItem(props: ManoolItemProps) {
-    return <div className="flex flex-col gap-0 flex-wrap">
+    return <div
+        className="flex flex-col gap-0 flex-wrap"
+        onClick={() => {
+            props.onClick()
+        }}>
         <Image src="/img.png" alt="Manool Image" width={200} height={200} layout="raw"/>
         <div className="flex justify-center py-2">
-            <p className="text-wrap text-center">{props.text}</p>
+            <p className="text-wrap text-center">{props.value}</p>
         </div>
     </div>
 }
 
-export interface ManoolItemRowProps { item: ItemRow }
 
-export function ManoolItemRow(props: ManoolItemRowProps) {
-    return <div className="flex flex-row gap-0">
-        <ManoolItem text={props.item.first}/>
-        <ManoolItem text={props.item.second}/>
-        <ManoolItem text={props.item.third}/>
-        <ManoolItem text={props.item.fourth}/>
-    </div>
-}
-
-const columns = [{render: (_value: string, row: ItemRow) => ManoolItemRow({item: row})}]
 const data = ["СЧАСТЬЕ", "ГРУСТЬ", "РАЗДРАЖЕНИЕ", "ОДИНОЧЕСТВО", "УДИВЛЕНИЕ", "СКЕПСИС", "ЯРОСТЬ", "ЗАДУМЧИВОСТЬ", "СТЫД", "УСТАЛОСТЬ", "САРКАЗМ", "СТРАСТЬ"]
-const rows: ItemRow[] = [new ItemRow(0, ...data.slice(0, 4)), new ItemRow(1, ...data.slice(4, 8)), new ItemRow(2, ...data.slice(8, 12)),]
+const rows: ItemRow[] = [
+    new ItemRow(0, ...data.slice(0, 4)),
+    new ItemRow(1, ...data.slice(4, 8)),
+    new ItemRow(2, ...data.slice(8, 12)),
+]
 
 export interface ManoolItemRowExpProps {
     record: ItemRow,
@@ -54,33 +57,24 @@ export interface ManoolItemRowExpProps {
 
 export function ManoolItemRowExpFirst(props: ManoolItemRowExpProps) {
     return (props.expanded && props.record.key == rows[props.record.key as number].key) ? <div
-        className="flex justify-center flex-row gap-0"
-        onClick={() => {
-
-        }}>
-        <Image src="/manulahuel.jpg" style={{
-
-        }} alt="Manool Ahuel" width={200} height={200} layout="raw"/>
+        className="flex justify-center flex-row gap-0">
+        <Image src="/manulahuel.jpg" alt="Manool Ahuel" width={200} height={200} layout="raw"/>
     </div> : <></>
 }
 
 export function ManoolItemRowExpSecond(props: ManoolItemRowExpProps) {
     return (props.expanded && props.record.key == rows[props.record.key as number].key) ? <div
-        className="flex justify-center flex-row gap-0"
-        onClick={() => {
-
-        }}>
-        <Image src="/manulahuel.jpg" className="hue-rotate-90 blur-sm" alt="Manool Ahuel" width={200} height={200} layout="raw"/>
+        className="flex justify-center flex-row gap-0">
+        <Image src="/manulahuel.jpg" className="hue-rotate-90 blur-sm" alt="Manool Ahuel" width={200} height={200}
+               layout="raw"/>
     </div> : <></>
 }
 
 export function ManoolItemRowExpThird(props: ManoolItemRowExpProps) {
     return (props.expanded && props.record.key == rows[props.record.key as number].key) ? <div
-        className="flex justify-center flex-row gap-0"
-        onClick={() => {
-
-        }}>
-        <Image src="/manulahuel.jpg" className="hue-rotate-180 contrast-200" alt="Manool Ahuel" width={200} height={200} layout="raw"/>
+        className="flex justify-center flex-row gap-0">
+        <Image src="/manulahuel.jpg" className="hue-rotate-180 contrast-200" alt="Manool Ahuel" width={200} height={200}
+               layout="raw"/>
     </div> : <></>
 }
 
@@ -89,10 +83,17 @@ export function ManoolItemRowExp(props: ManoolItemRowExpProps) {
     const rows: React.JSX.Element[] = [];
     for (let i = 0; i < rem + 1; i++) {
         switch (rem) {
-            case 0: rows.push(ManoolItemRowExpFirst(props)); break;
-            case 1: rows.push(ManoolItemRowExpSecond(props)); break;
-            case 2: rows.push(ManoolItemRowExpThird(props)); break;
-            default: return <></>
+            case 0:
+                rows.push(ManoolItemRowExpFirst(props));
+                break;
+            case 1:
+                rows.push(ManoolItemRowExpSecond(props));
+                break;
+            case 2:
+                rows.push(ManoolItemRowExpThird(props));
+                break;
+            default:
+                return <></>
         }
     }
     return <div className="flex flex-col">{rows}</div>
@@ -102,17 +103,81 @@ const expandedElementBuilder = (record: ItemRow, index: number, indent: number, 
     return ManoolItemRowExp({record, index, indent, expanded})
 }
 
+export interface ExpandIconProps {
+    expanded: boolean,
+}
+
+export function ExpandIcon(props: ExpandIconProps): React.JSX.Element {
+    return (props.expanded) ?
+        <div className="px-5">
+            <FaArrowUp className="bg-sky-400 px-2 w-10 h-10 text-white rounded-full"/>
+        </div> :
+        <div className="px-5">
+            <FaArrowDown className="bg-sky-400 px-2 w-10 h-10 text-white rounded-full"/>
+        </div>
+}
+
 export default function ManoolGrid() {
     const [expandedRowKeys, setExpandedRowKeys] = React.useState<readonly Key[]>([]);
+    const [expandedColumn, setExpandedColumn] = React.useState<boolean>(false);
+    const columns: ColumnsType<ItemRow> = [
+        EXPAND_COLUMN,
+        {
+            dataIndex: 'first',
+            render: (_value: string, row: ItemRow, index: number) =>
+                ManoolItem({
+                    value: _value,
+                    onClick: () => {
+                        setExpandedColumn(!expandedColumn)
+                    }
+                }),
+        },
+        {
+            hidden: !expandedColumn,
+            dataIndex: 'second',
+            render: (_value: string, row: ItemRow, index: number) => ManoolItem({
+                value: _value, onClick: () => {
+                    let newKeys = expandedRowKeys.map(a => Object.assign({}, a))
+                    let index = newKeys.findIndex((value, index, obj) => {
+                        return obj[index] == value
+                    })
+                    if (index == -1) {
+                        newKeys.push(row.key)
+                    } else {
+                        newKeys.splice(index, 1)
+                    }
+                    setExpandedRowKeys(newKeys)
+                }
+            }),
+        },
+        {
+            dataIndex: 'third',
+            render: (_value: string, row: ItemRow, index: number) => ManoolItem({
+                value: _value, onClick: () => {
+                }
+            }),
+        },
+        {
+            dataIndex: 'fourth',
+            render: (_value: string, row: ItemRow, index: number) => ManoolItem({
+                value: _value, onClick: () => {
+                }
+            }),
+        }
+    ]
+
     return <>
         <Table
             tableLayout={"fixed"}
             className="flex flex-wrap"
             columns={columns}
             expandable={{
+                showExpandColumn: true,
                 expandedRowKeys: expandedRowKeys,
+                expandIcon: (props) => ExpandIcon({
+                    expanded: props.expanded,
+                }),
                 rowExpandable: () => true,
-                expandRowByClick: true,
                 onExpandedRowsChange: setExpandedRowKeys,
                 expandedRowRender: expandedElementBuilder
             }}
